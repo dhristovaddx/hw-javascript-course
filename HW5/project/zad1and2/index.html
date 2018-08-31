@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+    
+</head>
+<body>
+    <div id="view">
+        <!-- 1. да се изведе картинка i от n-->
+        <h2>Millennium Monument <span>(1/6)</span></h2>
+        <a href="http://www.teara.govt.nz/en/video/44471/neil-dawsons-chalice-cathedral-square-christchurch" title="Millennium Monument">
+            <img src="./pics-large/chch-millennium-monument320x240.png" 
+                 alt="Millennium Monument">
+        </a>
+        <p>Neil Dawson's magnificent Chalice sculpture is located in Christchurch's Cathedral Square.Chalice celebrates the new millennium and the 150th Anniversary of the founding of Christchurch</p>
+    </div>
+    
+    <input type="button" value="<<" id="prv">
+    <input type="button" value="Auto" id="slide">
+    <input type="button" value=">>" id="nxt">
+
+    <noscript>
+        Моля, разрешете изпълнението на JS за да използвате 
+        услугите на сайта!
+    </noscript>
+    <script src="./js/jquery-3.3.1.min.js"></script>
+    <script src="./js/images.js"></script>
+    <script>
+        $(document).ready(function(){
+            var index = 0,
+                path  = './pics-large/',
+                v     = $('#view'),
+                imgNumber,
+                intervalID = 0,
+                btnLabel = '';
+                
+                
+
+            $('#nxt').click(function(event){
+                index++;
+
+                if( index >= images.length ){
+                    index = 0;
+                }
+                
+                imgNumber = (index + 1) + '/' + images.length; 
+                
+                showItem(v, images[index], path, imgNumber);
+                
+            });//on click button next
+
+            //2. бутон Auto
+            $('#slide').click(function(event){
+                if(intervalID > 0){ 
+                    clearInterval(intervalID);
+                    intervalID = 0;
+                    btnLabel = 'Auto';
+                } 
+                else {
+                    intervalID = setInterval(function(event){
+                    
+                        index++
+                
+                        if( index >= images.length){
+                        index = 0;
+                        }
+                    
+                        imgNumber = index + 1 + '/' + images.length;
+                        showItem(v,images[index], path, imgNumber);
+                
+                        }, 2000);
+                    
+                    btnLabel = 'Stop';
+                }
+                
+                $(this).val(btnLabel);
+            });//on click button slide
+            $("#prv").click(function(event){
+                index--;
+
+                if( index < 0 ){
+                    index = images.length - 1;//последната картинка
+                }
+                
+                imgNumber = (index + 1) + '/' + (images.length); 
+                
+                showItem(v, images[index], path, imgNumber);
+            });//on click button previous 
+        });//on document ready
+        
+        function showItem(gallery, item, path, imgNumber){
+                gallery.find('h2').html(item.title + "<span> (" + imgNumber + ")</span>");
+                gallery.find('a').attr({  
+                                'href' : item.url, 
+                                'title': item.title
+                             });
+                gallery.find('img').attr({
+                               'src' : path + item.src,
+                               'alt' : item.alt
+                               });
+                gallery.find('p').html(item.shortinfo);    
+        }
+    </script>
+</body>
+</html>
