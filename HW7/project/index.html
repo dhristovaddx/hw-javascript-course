@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+    <style>
+        #contactTable tr td {
+            padding: 5px;
+            margin-left: 0px;
+        }
+        #main {
+            background-color: lightblue;
+        }
+        #remove {
+            background-color: white;
+            color: red;
+        }
+        .businessContact {
+            background-color: pink;
+        }
+        .personalContact {
+            background-color: lightgray;
+        }
+    </style>
+</head>
+<body>
+    <h1>Contact Manager</h1>
+       <form method="GET" action="">
+            <table>
+                <tr>
+                    <td>
+                        <input type="text" id="fName" placeholder="Име" name="firstName">
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <input type="text" id="lName" placeholder="Фамилия" name="lastName">
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <input type="email" placeholder="name@no.com" id="email" name="email">
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <fieldset>
+                            <legend>Тип</legend>
+                            <label><input type="radio" name="contactType" value="1" checked="checked">Бизнес</label>
+                            <br>
+                            <label><input type="radio" name="contactType" value="2">Личен</label>
+                        </fieldset>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <input type="button" value="Add" id="add">
+                    </td>
+                </tr>
+            </table>
+        </label>
+    </form>
+    <table id="contactTable">
+        <tr id="main">
+            <td>&numero;</td>
+            <td>Име</td>
+            <td>Фамилия</td>
+            <td>E-mail</td>
+            <td>Тип клиент</td>
+            <td>&nbsp</td>
+        </tr>
+    </table>
+    <template id = contactData>
+        <tr>
+            <td class="contactNumber"></td>
+            <td class="firstName"></td>
+            <td class="lastName"></td>
+            <td class="email"></td>
+            <td class="contactType"></td>
+            <td><input type="button" value="&times" id="remove">
+        </tr>
+    </template>
+    <noscript>
+        Моля, разрешете изпълнението на JS за да използвате 
+        услугите на сайта!
+    </noscript>
+    <script src="./js/jquery-3.3.1.min.js"></script>
+    <script>
+        $(document).ready(function(){
+            var counter = 0,
+                contacts = [
+                    {firstName: 'Иван', lastName: 'Георгиев', email: 'ig@gmail.com', contactType: 'Личен'},
+                    {firstName: 'Елица', lastName: 'Димитрова', email: 'ed@gmail.com', contactType: 'Бизнес'},
+                    {firstName: 'Стефан', lastName: 'Христов', email: 'sh@gmail.com', contactType:'Личен'},
+                    {firstName: 'Георги', lastName: 'Петров', email: 'gp@gmail.com', contactType:'Бизнес'},
+                    {firstName: 'Петя', lastName: 'Людмилова', email: 'pl@gmail.com', contactType:'Личен'}
+                ];
+            var t = $('#contactData').html();     
+            
+            counter = loadContacts(contacts,$('#contactTable'),$(t));
+            
+            $('#add').click(function(){
+                var data = $('form').serializeArray(),
+                    tr$ = $(t);
+                         
+                ++counter;  
+                
+                data.forEach(function(field) {
+                    var value = field.value;
+                    var className = '';
+
+                    if (field.name === 'contactType') {
+                        if(field.value === '1') {
+                            value = '<label><input type="checkbox" class="changeType" data-business="Бизнес" data-personal="Личен" value="1" checked="checked"/>Бизнес</label>';
+                            className = 'businessContact';
+                        }
+                        else {
+                            value ='<label><input type="checkbox" class="changeType" value="2" data-business="Бизнес" data-personal="Личен"/>Личен</label>';
+                            className = 'personalContact';
+                        }
+                        tr$.addClass(className);
+                    }
+
+                    else if (field.name === 'email'){
+                        value = '<a href="mailto:' + field.value + '">' + field.value + '</a>';
+                    }
+
+                    tr$.find('.' + field.name).html(value);
+                    tr$.find('.contactNumber').html(counter);
+                    });
+                    $('#contactTable').append(tr$);	
+                
+                });// on add button click
+            
+            $('#contactTable').on('click','.changeType', function(){
+                var type = $(this).is(':checked'),
+                    trParent = $(this).parents('tr'),
+                    labelParent = $(this).parents('label'),
+                    checkbox$ = '<input type="checkbox" class="changeType" value="2" data-business="Бизнес" data-personal="Личен"';
+                
+                if (type) {
+                    type = $(this).data('business');
+                    trParent.css('background-color', 'pink');
+                    labelParent.html(checkbox$ + 'checked="checked"/>' + type);  
+                }
+                else {
+                    type = $(this).data('personal');
+                    trParent.css('background-color', 'lightgray');
+                    labelParent.html(checkbox$ + '/>' + type); 
+                }               
+            });
+            
+            $('#contactTable').on('click','#remove',function(){
+                $(this).parents('tr').fadeOut('300', function(){
+                    $(this).remove();
+                    var number=0;
+                    $('td.contactNumber').each(function(index, elm){
+                        elm.innerHTML = index + 1;
+                        number++;
+                    });
+                    counter = number;
+                });
+            });//on remove button click
+        });//on document ready
+        
+        function loadContacts(data, contactTable, template) {
+            var counter = 0;
+            
+            $.each(data, function(index, contact){
+                var newRow$ = template.clone(),
+                    value = '',
+                    className='';
+                
+                newRow$.find('.contactNumber').html(++counter);
+                newRow$.find('.firstName').html(contact.firstName);
+                newRow$.find('.lastName').html(contact.lastName);
+                newRow$.find('.email').html(contact.email);
+                
+                if (contact.contactType === "Бизнес") {
+                    value = '<label><input type="checkbox" class="changeType" data-business="Бизнес" data-personal="Личен" value="1" checked="checked"/>Бизнес</label>';
+                    className = 'businessContact';                                     
+                } 
+                else {
+                    value ='<label><input type="checkbox" class="changeType" value="2" data-business="Бизнес" data-personal="Личен"/>Личен</label>';
+                    className = 'personalContact';  
+                }
+                newRow$.find('.contactType').html(value);
+                newRow$.addClass(className);
+                contactTable.append(newRow$); 
+                
+            });//for each contact in table
+            return counter;
+        };
+    </script>
+</body>
+</html>
