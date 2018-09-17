@@ -55,7 +55,8 @@
                 <tr>
                     <td>
                         <input type="button" value="Add" id="add">
-                        <input type="button" value="Update" id="update">
+                        <input type="button" value="Update" id="update" style="display: none;">
+                        <input type="button" value="Cancel" id="cancel" style="display: none;">
                     </td>
                 </tr>
             </table>
@@ -104,44 +105,23 @@
     <script>
         $(document).ready(function(){
             var counter = 0,
-                t = $('#contactData').html();     
-            
-            counter = loadContacts(contacts, $('#contactTable'),$(t));
-            
-            $('#add').click(function(){
-                
-                var data = $('form').serializeArray(),
-                    tr$ = $(t);
-                
-                ++counter;
-                
-                data.forEach(function(field) {
-                    var value = field.value;
+                t = $('#contactData').html();
 
-                    if(field.name === 'contactType'){
-                        updateCheckbox(tr$, field.value)
-                    }
-                    else if (field.name === 'email') {
-                        tr$.find('.email a').html(field.value)
-                                            .attr('href','mailto:' + field.value);
-                    }
-                    else{
-                        tr$.find('.' + field.name).html(value);
-                    }
-                    
-                });//for each field in new contact form
+            counter = loadContacts(contacts, $('#contactTable'), $(t));
+
+            $('#add').click(function(){
+                var tr$ = $(t),
+                    contact = getFormContact('form');
                 
-                tr$.find('.contactNumber').html(counter);
-                $('#contactTable').append(tr$);
-                contacts.push('{firstName: "'  
-                              + $(tr$).find('.firstName').html() 
-                              + '", lastName: "'
-                              + $(tr$).find('.lastName').html()
-                              + '", email: "'
-                              + $(tr$).find('.email a').html()
-                              + '", contactType: "'
-                              + $(tr$).find('.changeType').val()
-                              + '"}');
+                if (findContactIndex(contacts, contact) !== - 1) return;
+                    
+                //тези редове няма да се изпълнят ако контактът съществува
+                tr$.find('.contactNumber').html(++counter);
+                addRow('#contactTable', tr$, contact);
+                contacts.push(contact);
+                $('#update').hide();
+                $(this).show("Add");
+                $('.edit').removeClass('edit');
                 console.log(contacts);
             });//on add button click
             
@@ -156,7 +136,18 @@
             
             $('#contactTable').on('click','#remove',function(){
                 $(this).parents('tr').fadeOut('300', function(){
-                    contacts.splice(contacts.indexOf(contacts.find(contact => contact.firstName === $(this).find('.firstName').html())), 1);
+                    var email = $(this).find('.email a').html();
+                    var contactType = $(this).find('.changeType').val();
+                    var index = findContactIndex(contacts, 
+                                                 {
+                                                   "contactType": contactType,
+                                                   "email": email
+                                                 });
+                    console.log('index: ' + index + 'email: ' + email);
+
+                    if(index !== -1) {
+                        contacts.splice(index, 1);
+                    }
                     $(this).remove();
                     
                     var number=0;
@@ -173,31 +164,60 @@
             });//on remove button click
             
             $('#contactTable').on('click', '#edit', function(){
-                $('#fName').val($(this).parents('tr').find('.firstName').html());
-                $('#lName').val($(this).parents('tr').find('.lastName').html());
-                $('#email').val($(this).parents('tr').find('.email a').html());
-                $('#personal').removeAttr('checked');
+                var tr$ = $(this).parents('tr');
+                var contact = {
+		                        email: tr$.find('.email a').text(),
+		                        contactType: tr$.find('.changeType').val()
+		                      };
+                var index = findContactIndex(contacts, contact);
                 
-                if($(this).parents('tr').find('.changeType').val() === '2') {
-                    $('#personal').attr('checked', true);
-                }
+                console.log('index: ' + index + ' contact: ', contact);
+                if (index === -1) return;
+	            
+                contacts[index]
+                $('#fName').val(contacts[index].firstName);
+	            $('#lName').val(contacts[index].lastName);
+	            $('#email').val(contacts[index].email);
+                
+                $('input:radio[name="contactType"]').removeAttr('checked');
+                
+                $('input:radio[value="' + contacts[index].contactType + '"]').attr('checked', true);
+                console.log(contacts[index].contactType);
+                tr$.addClass('edit');
+                $('#add').val("Add as New Contact");
+                $('#update').show();
+                $('#cancel').show();
             });//on edit button click
             
-            $('#update').click(function(){                
+            $('#update').click(function(){    
+                var tr$ = $(t),
+                    contact = getFormContact('form'),
+                    index = findContactIndex(contacts, contact),
+                    rowEmail = $('.edit').find('.email a').html(),
+                    formEmail = $('#email').val();
                 
-                contacts[contacts.indexOf(contacts.find(contact => contact.firstName === $('#fName').val()))] = '{firstName: "'  
-                              + $('#fName').val() 
-                              + '", lastName: "'
-                              + $('#lName').val()
-                              + '", email: "'
-                              + $('#email').val()
-                              + '", contactType: "'
-                              + $('[type="radio"][checked="checked"]').val()
-                              + '"}';
+                tr$.find('.contactNumber').html(index + 1);
                 
+                if (formEmail === rowEmail) {
+                    updateRow('#contactTable', tr$, contact);
+                    contacts[index] = contact;
+                } 
+                else {
+                    alert('A contact with this e-mail already exists. Please add as new contact');
+                }
+                
+                        
                 console.log(contacts);
                 
+                $('.edit').removeClass('edit');  
+                clearForm();
             });//on button update click
+            
+            $('#cancel').click(function(){
+                clearForm();
+                $('.edit').removeClass('edit'); 
+            });//on button cancel click
+            
         });//on document ready
         
         function loadContacts (data, contactTable, template) {
@@ -232,6 +252,65 @@
             checkbox$.val(contactType);
             checkbox$.next().html(checkbox$.data(state));
             row$.toggleClass(className, !checkbox$.is(':checked')); 
+        }
+        
+        function findContactIndex(contacts, contact) {
+            return contacts.indexOf(contacts.find(c =>c.email === contact.email));
+        }
+        
+        function addRow(tableId, row$, contact) {
+            $.each(contact, function(field, value) {
+                if(field === 'contactType') {
+                    updateCheckbox(row$, value);
+                }
+                else if (field === 'email') {
+                    row$.find('.email a').html(value)
+                                         .attr('href', 'mailto:' + value);
+                }
+                else{
+                    row$.find('.' + field).html(value);
+                }
+            });
+            $(tableId).append(row$);
+        }
+        
+        function updateRow(tableId, row$, contact) {
+            var counter = 0;
+            $.each(contact, function(field, value) {
+                if(field === 'contactType') {
+                    updateCheckbox(row$, value);
+                }
+                else if (field === 'email') {
+                    row$.find('.email a').html(value)
+                                         .attr('href', 'mailto:' + value);
+                }
+                else{
+                    row$.find('.' + field).html(value);
+                }
+                
+            });
+            $('.edit').replaceWith(row$);
+            
+        }
+        
+        function getFormContact(formId) {
+            var contact = {};
+            var data = $(formId).serializeArray();
+
+            data.forEach(function(field) {
+                contact[field.name] = field.value;
+            });//for each field in contact form
+
+            return contact;
+        }
+        
+        function clearForm(){
+            $('#fName').val('');
+            $('#lName').val('');
+            $('#email').val('');
+            $('#update').hide();
+            $('#cancel').hide();
+            $('#add').val("Add");
         }
     </script>
 </body>
